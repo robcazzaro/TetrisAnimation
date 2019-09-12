@@ -4,9 +4,9 @@ An Arduino library for drawing letters and numbers using a falling block style a
 
 [![alt text](https://j.gifs.com/6RvBDl.gif "Tetris clock animation")](https://youtu.be/BGmjvfqf_0U)
 
-Deisgined orginally for RGB LED Matrixes, but it should in theory work with any display that uses the Adafruit GFX library.
+Desigined orginally for RGB LED Matrixes, modified to work with SPI TFT screen and https://github.com/Bodmer/TFT_eSPI.
 
-### Displays/Libraries tested ( Examples included)
+### [Currently broken] Displays/Libraries tested ( Examples included)
 - RGB LED Matrix using the [PxMatrix library](https://github.com/2dom/PxMatrix/) - ESP8266 and ESP32
 - VGA Display using the [Bitluni ESP32Lib](https://github.com/bitluni/ESP32Lib) - ESP32
 - Nokia 5110 Screen using a modified [Adafruit PCD8544 library](https://github.com/bbx10/Adafruit-PCD8544-Nokia-5110-LCD-library/tree/esp8266) - ESP8266
@@ -15,7 +15,7 @@ PLEASE NOTE: There are some issues with ESP8266 sketches that make use of WiFi a
 
 ## Installation & Setup
 
-Search for "Tetris Animation" on the Arduino library manager
+Fron ZIP file
 
 ## Basic Usage
 
@@ -24,8 +24,8 @@ See examples for more details.
 ### Intialise library by passing in a display:
 
 ```
-PxMATRIX display(64, 32, P_LAT, P_OE, P_A, P_B, P_C, P_D, P_E); //Intialise any display that makes use of Adafruit GFX
-TetrisMatrixDraw tetris(display); //Pass it into the library
+TFT_eSPI tft = TFT_eSPI(135, 240);		// create an instance of TFT_eSPI screen
+TetrisTFTDraw tetris(tft); //Pass it into the library
 
 ```
 
