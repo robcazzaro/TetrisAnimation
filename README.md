@@ -1,4 +1,4 @@
-# TetrisAnimation
+# TetrisTFTAnimation
 
 An Arduino library for drawing letters and numbers using a falling block style animation.
 
@@ -8,7 +8,13 @@ Original library by Tobias Blum https://github.com/toblum/TetrisAnimation
 
 Desigined orginally for RGB LED Matrixes, modified to work with SPI TFT screen and https://github.com/Bodmer/TFT_eSPI.
 
-Main improvements include adding 3D border effects to blocks when scaled up, having the block start from random starting points and move towards the final destination, fixing a rotation bug in the original library (the logic recognized only 0 and 1 rotations, even if the characters were designed for up to 3 rotations.)
+Main improvements include:
+- adding 3D border effects to blocks when scaled up (single or double)
+- when using block outlines, new option to use tetromino color for outline color
+- time colon now is built from square tetrominos
+- tetrominos drop from random starting points and move towards the final destination
+- fixed a rotation bug in the original library (the logic recognized only 0 and 1 rotations, even if the characters were designed for up to 3 rotations.) 
+- numbers use original Tetris tetrominos colors
 
 Demo and all test done on an integrated ESP32 and TFT board: https://github.com/Xinyuan-LilyGO/TTGO-T-Display.  The library should still work with the original Adafruit GFX library and the original samples should still work, but not guaranteed
 
