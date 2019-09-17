@@ -2,7 +2,7 @@
 
 An Arduino library for drawing letters and numbers using a falling block style animation.
 
-[![alt text](https://github.com/robcazzaro/TetrisTFTAnimation/blob/master/TetrisDemo.gif "Tetris alphabet animation")]
+![alt text](https://github.com/robcazzaro/TetrisTFTAnimation/blob/master/TetrisDemo.gif "Tetris alphabet animation")
 
 Original library by Tobias Blum https://github.com/toblum/TetrisAnimation
 
@@ -14,7 +14,7 @@ Demo and all test done on an integrated ESP32 and TFT board: https://github.com/
 
 ### Displays/Libraries tested (Examples included)
 
-- Integrated ESP32 and TFT https://github.com/Xinyuan-LilyGO/TTGO-T-Display  [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI)
+- Integrated ESP32 and TFT using [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI) - https://github.com/Xinyuan-LilyGO/TTGO-T-Display  
 
 Original libraries, not tested with updated library, but should still work
 - RGB LED Matrix using the [PxMatrix library](https://github.com/2dom/PxMatrix/) - ESP8266 and ESP32
