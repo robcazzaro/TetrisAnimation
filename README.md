@@ -4,15 +4,17 @@ An Arduino library for drawing letters and numbers using a falling block style a
 
 [![alt text](https://github.com/robcazzaro/TetrisTFTAnimation/blob/master/TetrisDemo.gif "Tetris alphabet animation")]
 
+Original library by Tobias Blum https://github.com/toblum/TetrisAnimation
+
 Desigined orginally for RGB LED Matrixes, modified to work with SPI TFT screen and https://github.com/Bodmer/TFT_eSPI.
 
-Main improvements include adding 3D border effects to blocks when scaled up, having the block start from random starting points and move towards the final destination, fixing a rotation bug in the original library (the logic recognized only 0 and 1 rotations, even if the characters were designed for up to 3 rotations.
+Main improvements include adding 3D border effects to blocks when scaled up, having the block start from random starting points and move towards the final destination, fixing a rotation bug in the original library (the logic recognized only 0 and 1 rotations, even if the characters were designed for up to 3 rotations.)
 
-The library should still work with the original Adafruit GFX library and the original samples should still work, but not guaranteed
+Demo and all test done on an integrated ESP32 and TFT board: https://github.com/Xinyuan-LilyGO/TTGO-T-Display.  The library should still work with the original Adafruit GFX library and the original samples should still work, but not guaranteed
 
 ### Displays/Libraries tested (Examples included)
 
-- Integrated ESP32 and TFT [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI)
+- Integrated ESP32 and TFT https://github.com/Xinyuan-LilyGO/TTGO-T-Display  [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI)
 
 Original libraries, not tested with updated library, but should still work
 - RGB LED Matrix using the [PxMatrix library](https://github.com/2dom/PxMatrix/) - ESP8266 and ESP32
