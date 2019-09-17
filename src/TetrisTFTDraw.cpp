@@ -1,4 +1,10 @@
 /*
+Copyright (c) 2019 Roberto Cazzaro . All right reserved.
+
+Tetris TFT library 
+Based on https://github.com/toblum/TetrisAnimation, adapted
+for TFT screens, 3D block effects and lateral movements
+
 Copyright (c) 2018 Tobias Blum . All right reserved.
 
 Tetris Matrix Clock
@@ -17,17 +23,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
 
-#include "TetrisMatrixDraw.h"
+#include "TetrisTFTDraw.h"
 #include "TetrisNumbers.h"
 #include "TetrisLetters.h"
 
-TetrisMatrixDraw::TetrisMatrixDraw(Adafruit_GFX &display)	{
+// Uses Adafruit GFX library by default unless TFT_ESPI is defined
+#if DISPLAY_LIBRARY == TFT_ESPI
+TetrisTFTDraw::TetrisTFTDraw(TFT_eSPI &display)	
+{
     this->display = &display;
-    intialiseColors();
     resetNumStates();
 }
+#else
+TetrisMatrixDraw::TetrisMatrixDraw(Adafruit_GFX &display)	
+{
+    this->display = &display;
+    resetNumStates();
+}
+#endif
 
-void TetrisMatrixDraw::drawChar(String letter, uint8_t x, uint8_t y, uint16_t color)
+void TetrisTFTDraw::drawChar(String letter, uint8_t x, uint8_t y, uint16_t color)
 {
     this->display->setTextColor(color);
     this->display->setCursor(x, y);
@@ -37,7 +52,7 @@ void TetrisMatrixDraw::drawChar(String letter, uint8_t x, uint8_t y, uint16_t co
 // *********************************************************************
 // Draws a brick shape at a given position
 // *********************************************************************
-void TetrisMatrixDraw::drawShape(int blocktype, uint16_t color, int x_pos, int y_pos, int num_rot)
+void TetrisTFTDraw::drawShape(int blocktype, uint16_t color, int x_pos, int y_pos, int num_rot)
 {
   // Square
   if (blocktype == 0)
@@ -234,14 +249,40 @@ void TetrisMatrixDraw::drawShape(int blocktype, uint16_t color, int x_pos, int y
    }
 }
 
-void TetrisMatrixDraw::drawLargerBlock(int x_pos, int y_pos, int scale, uint16_t color){
-  this->display->fillRect(x_pos, y_pos, scale, scale, color);
-  if(drawOutline){
-    this->display->drawRect(x_pos, y_pos, scale, scale, this->outLineColour);
+void TetrisTFTDraw::drawLargerBlock(int x_pos, int y_pos, int scale, uint16_t color, int borderColorIndex){
+  if (draw3DOutline || draw3DDblOutline) {
+    if (draw3DDblOutline) {		// double 3D border
+	  this->display->fillRect(x_pos + 2, y_pos + 2, scale - 4, scale - 4, color);		// draw smaller block
+	  this->display->drawFastVLine(x_pos, y_pos, scale, tetris3DColors[borderColorIndex][1]);	// draw sides - outer
+	  this->display->drawFastVLine(x_pos + scale - 1, y_pos, scale, tetris3DColors[borderColorIndex][1]);
+	  this->display->drawFastVLine(x_pos + 1, y_pos, scale, tetris3DColors[borderColorIndex][1]);	// draw sides - inner
+	  this->display->drawFastVLine(x_pos + scale - 2, y_pos, scale, tetris3DColors[borderColorIndex][1]);
+	  
+	  this->display->drawFastHLine(x_pos, y_pos, scale, tetris3DColors[borderColorIndex][0]);	// draw light top - outer
+	  this->display->drawFastHLine(x_pos + 1, y_pos + 1, scale - 2, tetris3DColors[borderColorIndex][0]);	// draw shorter light top - inner
+	  this->display->drawFastHLine(x_pos, y_pos + scale - 1, scale, tetris3DColors[borderColorIndex][2]);	// draw dark bottom - outer
+	  this->display->drawFastHLine(x_pos +1, y_pos + scale - 2, scale - 2, tetris3DColors[borderColorIndex][2]);	// draw shorter dark bottom - inner	  
+	}
+	else {					// single 3D border
+	  this->display->fillRect(x_pos + 1, y_pos + 1, scale - 2, scale - 2, color);		// draw smaller block
+	  this->display->drawFastVLine(x_pos, y_pos, scale, tetris3DColors[borderColorIndex][1]);	// draw sides
+	  this->display->drawFastVLine(x_pos + scale - 1, y_pos, scale, tetris3DColors[borderColorIndex][1]);
+	  this->display->drawFastHLine(x_pos, y_pos, scale, tetris3DColors[borderColorIndex][0]);	// draw light top
+	  this->display->drawFastHLine(x_pos, y_pos + scale - 1, scale, tetris3DColors[borderColorIndex][2]);	// draw dark bottom */
+	}	
   }
+  else {					// solid block
+	this->display->fillRect(x_pos, y_pos, scale, scale, color);
+    if (drawOutline){		// outline fixed color
+	  this->display->drawRect(x_pos, y_pos, scale, scale, this->outLineColour);
+    }
+	if (drawBlockOutline){		// outline using block border color
+	  this->display->drawRect(x_pos, y_pos, scale, scale, tetris3DColors[borderColorIndex][1]);  
+    }	  
+  } 
 }
 
-void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color, int x_pos, int y_pos, int num_rot)
+void TetrisTFTDraw::drawLargerShape(int scale, int blocktype, uint16_t color, int x_pos, int y_pos, int num_rot, int borderColorIndex)
 {
   int offset1 = 1 * scale;
   int offset2 = 2 * scale;
@@ -250,10 +291,10 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   // Square
   if (blocktype == 0)
   {
-    this->drawLargerBlock(x_pos, y_pos, scale, color);
-    this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-    this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-    this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+    this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+    this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+    this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+    this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
   }
 
   // L-Shape
@@ -261,34 +302,34 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
 
     }
     if (num_rot == 1)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color, borderColorIndex);
 
     }
     if (num_rot == 2)
     {
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
 
     }
     if (num_rot == 3)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color, borderColorIndex);
     }
   }
 
@@ -297,31 +338,31 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color, borderColorIndex);
     }
     if (num_rot == 1)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
     }
     if (num_rot == 2)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color, borderColorIndex);
     }
     if (num_rot == 3)
     {
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
     }
   }
 
@@ -330,17 +371,17 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0 || num_rot == 2)
     { // Horizontal
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset3, y_pos, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset3, y_pos, scale, color, borderColorIndex);
     }
     if (num_rot == 1 || num_rot == 3)
     { // Vertical
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset3, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset3, scale, color, borderColorIndex);
     }
   }
 
@@ -349,17 +390,17 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0 || num_rot == 2)
     {
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
     }
     if (num_rot == 1 || num_rot == 3)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color, borderColorIndex);
     }
   }
 
@@ -368,17 +409,17 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0 || num_rot == 2)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color, borderColorIndex);
     }
     if (num_rot == 1 || num_rot == 3)
     {
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
     }
   }
 
@@ -387,31 +428,31 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
   {
     if (num_rot == 0)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
     }
     if (num_rot == 1)
     {
-      this->drawLargerBlock(x_pos, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset2, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
     }
     if (num_rot == 2)
     {
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset2, y_pos - offset1, scale, color, borderColorIndex);
     }
     if (num_rot == 3)
     {
-      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
-      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color);
+      this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
+      this->drawLargerBlock(x_pos + offset1, y_pos - offset2, scale, color, borderColorIndex);
     }
   }
 
@@ -420,32 +461,32 @@ void TetrisMatrixDraw::drawLargerShape(int scale, int blocktype, uint16_t color,
    {
      if (num_rot == 0)
      {
-       this->drawLargerBlock(x_pos, y_pos, scale, color);
-       this->drawLargerBlock(x_pos + offset1, y_pos, scale, color);
-       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
+       this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos + offset1, y_pos, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
      }
      if (num_rot == 1)
      {
-       this->drawLargerBlock(x_pos, y_pos, scale, color);
-       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
-       this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+       this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
      }
      if (num_rot == 2)
      {
-       this->drawLargerBlock(x_pos + offset1 , y_pos, scale, color);
-       this->drawLargerBlock(x_pos + offset1 , y_pos - offset1, scale, color);
-       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color);
+       this->drawLargerBlock(x_pos + offset1 , y_pos, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos + offset1 , y_pos - offset1, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos, y_pos - offset1, scale, color, borderColorIndex);
      }
      if (num_rot == 3)
      {
-       this->drawLargerBlock(x_pos, y_pos, scale, color);
-       this->drawLargerBlock(x_pos + offset1, y_pos , scale, color);
-       this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color);
+       this->drawLargerBlock(x_pos, y_pos, scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos + offset1, y_pos , scale, color, borderColorIndex);
+       this->drawLargerBlock(x_pos + offset1, y_pos - offset1, scale, color, borderColorIndex);
      }
    }
 }
 
-void TetrisMatrixDraw::setNumState(int index, int value, int x_shift)
+void TetrisTFTDraw::setNumState(int index, int value, int x_shift)
 {
     if(index < TETRIS_MAX_NUMBERS) {
       Serial.println(value);
@@ -456,7 +497,7 @@ void TetrisMatrixDraw::setNumState(int index, int value, int x_shift)
     }
 }
 
-void TetrisMatrixDraw::setTime(String time, bool forceRefresh)
+void TetrisTFTDraw::setTime(String time, bool forceRefresh)
 {
     this->sizeOfValue = 4;
     time.replace(":", "");
@@ -476,7 +517,7 @@ void TetrisMatrixDraw::setTime(String time, bool forceRefresh)
     }
 }
 
-void TetrisMatrixDraw::setNumbers(int value, bool forceRefresh)
+void TetrisTFTDraw::setNumbers(int value, bool forceRefresh)
 {
   String strValue = String(value);
   if(strValue.length() <= TETRIS_MAX_NUMBERS){
@@ -499,7 +540,7 @@ void TetrisMatrixDraw::setNumbers(int value, bool forceRefresh)
   }
 }
 
-void TetrisMatrixDraw::setText(String txt, bool forceRefresh)
+void TetrisTFTDraw::setText(String txt, bool forceRefresh)
 {
     this->sizeOfValue = txt.length();
     int currentXShift = 0;
@@ -516,22 +557,21 @@ void TetrisMatrixDraw::setText(String txt, bool forceRefresh)
     }
 }
 
-bool TetrisMatrixDraw::drawText(int x, int yFinish)
+bool TetrisTFTDraw::drawText(int x, int yFinish)
 {
-  // For each number position
+  // For each character position
   bool finishedAnimating = true;
 
   int scaledYOffset = (this->scale > 1) ? this->scale : 1;
   int y = yFinish - (TETRIS_Y_DROP_DEFAULT * this->scale);
 
-  // For each number position
+  // For each character position
   for (int numpos = 0; numpos < this->sizeOfValue; numpos++)
   {
 
     if(numstates[numpos].num_to_draw >= 33)
     {
       // Draw falling shape
-      //if (numstates[numpos].blockindex < blocksPerNumber[numstates[numpos].num_to_draw])
       if (numstates[numpos].blockindex < blocksPerChar[numstates[numpos].num_to_draw-33])
       {
         finishedAnimating = false;
@@ -548,45 +588,87 @@ bool TetrisMatrixDraw::drawText(int x, int yFinish)
         }
         if (rotations == 2)
         {
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3))
-          {
-            rotations = 0;
-          }
           if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3 * 2))
           {
             rotations = 1;
           }
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3))
+          {
+            rotations = 0;
+          }
         }
         if (rotations == 3)
         {
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4))
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 3))
           {
-            rotations = 0;
+            rotations = 2;
           }
           if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 2))
           {
             rotations = 1;
           }
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 3))
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4))
           {
-            rotations = 2;
+            rotations = 0;
           }
         }
+
+		// Handle lateral movements
+		int charPos = numpos % 4;
+			
+		int delta_x = randomStart[charPos][numstates[numpos].blockindex];
+		int step = 1;
+		if (delta_x < 0) step = -1;
+		int adelta_x = abs(delta_x);
+		
+        if (adelta_x == 1)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 2))
+          {
+            delta_x = 0;
+          }
+        }
+        if (adelta_x == 2)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 3))
+          {
+            delta_x = step;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 3 * 2))
+          {
+            delta_x = 0;
+          }
+        }
+        if (adelta_x == 3)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4))
+          {
+            delta_x = step * 2;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4 * 2))
+          {
+            delta_x = step;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4 * 3))
+          {
+            delta_x = 0;
+          }
+        }
+
         if(this->scale <= 1){
           drawShape(current_fall.blocktype, 
                     this->tetrisColors[current_fall.color],
-                    x + current_fall.x_pos + numstates[numpos].x_shift, 
+                    x + current_fall.x_pos + numstates[numpos].x_shift + delta_x, 
                     y + numstates[numpos].fallindex - scaledYOffset, 
                     rotations);
         } else {
           drawLargerShape(this->scale, 
                           current_fall.blocktype, 
                           this->tetrisColors[current_fall.color], 
-                          x + (current_fall.x_pos * this->scale) + numstates[numpos].x_shift, 
+                          x + (current_fall.x_pos * this->scale) + numstates[numpos].x_shift  + delta_x * this->scale, 
                           y + (numstates[numpos].fallindex * scaledYOffset) - scaledYOffset, 
-                          rotations);
+                          rotations, current_fall.color);
         }
-        //drawShape(current_fall.blocktype, this->tetrisColors[current_fall.color], x + current_fall.x_pos + numstates[numpos].x_shift, y + numstates[numpos].fallindex - 1, rotations);
         numstates[numpos].fallindex++;
 
         if (numstates[numpos].fallindex > current_fall.y_stop)
@@ -614,26 +696,23 @@ bool TetrisMatrixDraw::drawText(int x, int yFinish)
                             this->tetrisColors[fallen_block.color], 
                             x + (fallen_block.x_pos * this->scale) + numstates[numpos].x_shift, 
                             y + (fallen_block.y_stop * scaledYOffset) - scaledYOffset, 
-                            fallen_block.num_rot);
+                            fallen_block.num_rot, fallen_block.color);
           }
-          //drawShape(fallen_block.blocktype, this->tetrisColors[fallen_block.color], x + fallen_block.x_pos + numstates[numpos].x_shift, y + fallen_block.y_stop - 1, fallen_block.num_rot);
         }
       }
     }
-    
   }
-
   return finishedAnimating;
 }
 
-bool TetrisMatrixDraw::drawNumbers(int x, int yFinish, bool displayColon)
+bool TetrisTFTDraw::drawNumbers(int x, int yFinish, bool displayColon)
 {
   // For each number position
   bool finishedAnimating = true;
 
   int scaledYOffset = (this->scale > 1) ? this->scale : 1;
   int y = yFinish - (TETRIS_Y_DROP_DEFAULT * this->scale);
-
+  
   for (int numpos = 0; numpos < this->sizeOfValue; numpos++)
   {
     if(numstates[numpos].num_to_draw >= 0) 
@@ -655,44 +734,84 @@ bool TetrisMatrixDraw::drawNumbers(int x, int yFinish, bool displayColon)
         }
         if (rotations == 2)
         {
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3))
-          {
-            rotations = 0;
-          }
           if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3 * 2))
           {
             rotations = 1;
           }
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 3))
+          {
+            rotations = 0;
+          }
         }
         if (rotations == 3)
         {
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4))
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 3))
           {
-            rotations = 0;
+            rotations = 2;
           }
           if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 2))
           {
             rotations = 1;
           }
-          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4 * 3))
+          if (numstates[numpos].fallindex < (int)(current_fall.y_stop / 4))
           {
-            rotations = 2;
+            rotations = 0;
+          }
+        }
+		
+		// Handle lateral movements
+		int delta_x = randomStart[numpos][numstates[numpos].blockindex];
+		int step = 1;
+		if (delta_x < 0) step = -1;
+		int adelta_x = abs(delta_x);
+		
+        if (adelta_x == 1)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 2))
+          {
+            delta_x = 0;
+          }
+        }
+        if (adelta_x == 2)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 3))
+          {
+            delta_x = step;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 3 * 2))
+          {
+            delta_x = 0;
+          }
+        }
+        if (adelta_x == 3)
+        {
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4))
+          {
+            delta_x = step * 2;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4 * 2))
+          {
+            delta_x = step;
+          }
+          if (numstates[numpos].fallindex > (int)(current_fall.y_stop / 4 * 3))
+          {
+            delta_x = 0;
           }
         }
 
         if(this->scale <= 1){
           drawShape(current_fall.blocktype, 
                     this->tetrisColors[current_fall.color],
-                    x + current_fall.x_pos + numstates[numpos].x_shift, 
+                    x + current_fall.x_pos + numstates[numpos].x_shift + delta_x, 
                     y + numstates[numpos].fallindex - scaledYOffset, 
                     rotations);
         } else {
           drawLargerShape(this->scale, 
                           current_fall.blocktype, 
                           this->tetrisColors[current_fall.color], 
-                          x + (current_fall.x_pos * this->scale) + numstates[numpos].x_shift, 
+                          x + (current_fall.x_pos * this->scale) + numstates[numpos].x_shift + delta_x * this->scale, 
                           y + (numstates[numpos].fallindex * scaledYOffset) - scaledYOffset, 
-                          rotations);
+                          rotations, current_fall.color);
         }
         numstates[numpos].fallindex++;
 
@@ -721,7 +840,7 @@ bool TetrisMatrixDraw::drawNumbers(int x, int yFinish, bool displayColon)
                             this->tetrisColors[fallen_block.color], 
                             x + (fallen_block.x_pos * this->scale) + numstates[numpos].x_shift, 
                             y + (fallen_block.y_stop * scaledYOffset) - scaledYOffset, 
-                            fallen_block.num_rot);
+                            fallen_block.num_rot, fallen_block.color);
           }
         }
       }
@@ -730,50 +849,55 @@ bool TetrisMatrixDraw::drawNumbers(int x, int yFinish, bool displayColon)
 
   if (displayColon)
   {
-    this->drawColon(x, y, this->tetrisWHITE);
+    this->drawColon(x, yFinish, TETRIS_WHITE, 3);  // 3 is white color
   }
 
   return finishedAnimating;
 }
 
-void TetrisMatrixDraw::drawColon(int x, int y, uint16_t colonColour){
-  int colonSize = 2 * this->scale;
+void TetrisTFTDraw::drawColon(int x, int y, uint16_t colonColour, uint16_t borderColorIndex)
+{
   int xColonPos = x + (TETRIS_DISTANCE_BETWEEN_DIGITS * 2 * this->scale);  
-  display->fillRect(xColonPos, y + (12 * this->scale), colonSize, colonSize, colonColour);
-  display->fillRect(xColonPos, y + (8 * this->scale), colonSize, colonSize, colonColour);
+  int yColonPos = y - (8 * this->scale); 
+  if(this->scale <= 1){
+	this->display->fillRect(xColonPos, yColonPos, 2, 2, colonColour);		// draw top 2x2 box
+	this->display->fillRect(xColonPos, yColonPos + 4, 2, 2, colonColour);		// draw bottom 2x2 box  
+  } else {
+	drawLargerBlock(xColonPos, yColonPos, this->scale, colonColour, borderColorIndex);                  // top block
+    drawLargerBlock(xColonPos + this->scale, yColonPos, this->scale, colonColour, borderColorIndex);   
+    drawLargerBlock(xColonPos, yColonPos + this->scale, this->scale, colonColour, borderColorIndex);
+    drawLargerBlock(xColonPos + this->scale, yColonPos + this->scale, this->scale, colonColour, borderColorIndex);
+
+    yColonPos += 4 * this->scale;
+    drawLargerBlock(xColonPos, yColonPos, this->scale, colonColour, borderColorIndex);   // bottom block
+    drawLargerBlock(xColonPos + this->scale, yColonPos, this->scale, colonColour, borderColorIndex);
+    drawLargerBlock(xColonPos, yColonPos + this->scale, this->scale, colonColour, borderColorIndex);
+    drawLargerBlock(xColonPos + this->scale, yColonPos + this->scale, this->scale, colonColour, borderColorIndex);
+  }
 }
 
-void TetrisMatrixDraw::intialiseColors(){
-    this->tetrisRED = 0xF800;
-    this->tetrisGREEN = 0x07E0;
-    this->tetrisBLUE = 0x325F;
-    this->tetrisWHITE = 0xFFFF;
-    this->tetrisYELLOW = 0xFFE0;
-    this->tetrisCYAN = 0x07FF;
-    this->tetrisMAGENTA = 0xF81F;
-    this->tetrisORANGE = 0xFB00;
-    this->tetrisBLACK = 0x0000;
-    
-    this->tetrisColors[0] = this->tetrisRED; 
-    this->tetrisColors[1] = this->tetrisGREEN; 
-    this->tetrisColors[2] = this->tetrisBLUE; 
-    this->tetrisColors[3] = this->tetrisWHITE; 
-    this->tetrisColors[4] = this->tetrisYELLOW; 
-    this->tetrisColors[5] = this->tetrisCYAN; 
-    this->tetrisColors[6] = this->tetrisMAGENTA;
-    this->tetrisColors[7] = this->tetrisORANGE; 
-    this->tetrisColors[8] = this->tetrisBLACK;
-}
-
-int TetrisMatrixDraw::calculateWidth(){
+int TetrisTFTDraw::calculateWidth()
+{
   return (this->sizeOfValue * TETRIS_DISTANCE_BETWEEN_DIGITS) - 1;
 }
 
-void TetrisMatrixDraw::resetNumStates(){
+void TetrisTFTDraw::resetNumStates()
+{
     for(int i = 0; i < TETRIS_MAX_NUMBERS; i++){
         this->numstates[i].num_to_draw = -1;
         this->numstates[i].fallindex = 0;
         this->numstates[i].blockindex = 0;
         this->numstates[i].x_shift = 0;
     }
+}
+
+void TetrisTFTDraw::setRandomDropStart()		// set random starting drop point for each tetromino in each number location
+{
+  for (int j = 0; j < 13; j++){
+    randomStart[0][j] = random(0, 3);    // start point is within 2 blocks from destination to avoid exiting screen
+    randomStart[1][j] = random(-2, 3);    // start point is within + or - 2 blocks from destination
+    randomStart[2][j] = random(-2, 3);    // start point is within + or - 2 blocks from destination
+    randomStart[3][j] = random(-2, 1);    // start point is within -2 blocks from destination to avoid exiting screen for numbers
+  }
+
 }

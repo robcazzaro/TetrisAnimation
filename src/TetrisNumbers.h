@@ -1,5 +1,5 @@
 // *********************************************************************
-// Types and data that describes how numbers are drawed
+// Types and data that describes how numbers are drawn
 // *********************************************************************
 
 // Type that describes how a brick is falling down
@@ -7,7 +7,7 @@ typedef struct
 {
   int blocktype;  // Number of the block type
   int color; // Color of the brick
-  int x_pos;      // x-position (starting from the left number staring point) where the brick should be placed
+  int x_pos;      // x-position (starting from the left number starting point) where the brick should be placed
   int y_stop;     // y-position (1-16, where 16 is the last line of the matrix) where the brick should stop falling
   int num_rot;    // Number of 90-degree (clockwise) rotations a brick is turned from the standard position
 } fall_instr;
@@ -184,7 +184,7 @@ fall_instr num_9[SIZE_NUM_9] = {
 int blocksPerNumber[10] = {SIZE_NUM_0, SIZE_NUM_1, SIZE_NUM_2, SIZE_NUM_3, SIZE_NUM_4, SIZE_NUM_5, SIZE_NUM_6, SIZE_NUM_7, SIZE_NUM_8, SIZE_NUM_9};
 
 // *********************************************************************
-// Helper function that that return the falling instruction for a given number
+// Helper function that return the falling instruction for a given number
 // *********************************************************************
 fall_instr getFallinstrByNum(int num, int blockindex)
 {

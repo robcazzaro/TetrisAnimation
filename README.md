@@ -14,9 +14,9 @@ Demo and all test done on an integrated ESP32 and TFT board: https://github.com/
 
 ### Displays/Libraries tested (Examples included)
 
-- Integrated ESP32 and TFT using [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI) - https://github.com/Xinyuan-LilyGO/TTGO-T-Display  
+- Integrated ESP32 and TFT using [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI) - Board https://github.com/Xinyuan-LilyGO/TTGO-T-Display  
 
-Original libraries, not tested with updated library, but should still work
+Original demos, not tested with updated library, but should still work
 - RGB LED Matrix using the [PxMatrix library](https://github.com/2dom/PxMatrix/) - ESP8266 and ESP32
 - VGA Display using the [Bitluni ESP32Lib](https://github.com/bitluni/ESP32Lib) - ESP32
 - Nokia 5110 Screen using a modified [Adafruit PCD8544 library](https://github.com/bbx10/Adafruit-PCD8544-Nokia-5110-LCD-library/tree/esp8266) - ESP8266
@@ -25,6 +25,14 @@ Original libraries, not tested with updated library, but should still work
 ## Installation & Setup
 
 From ZIP file
+
+
+## Running the TTGO-T-Display example
+
+To properly configure the TFT_eSPI library for the TTGO-T-Display device:
+- the file `TTGO_T_Display.h` must be copied into the `TFT_eSPI/User_Setups/` directory
+- add `#include <User_Setups/TTGO_T_Display.h>` to the `TFT_eSPI/User_Setup_Select.h` file
+
 
 ## Basic Usage
 

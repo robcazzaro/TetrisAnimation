@@ -3,9 +3,8 @@ Font created by Mike Swan.
 Github: n00dles101
 */
 
-
 // *********************************************************************
-// Types and data that describes how numbers are drawed
+// Types and data that describes how numbers are drawn
 // *********************************************************************
 
 // Type that describes how a brick is falling down
@@ -110,8 +109,8 @@ fall_instr_let a38[8] = {
 // *********************************************************************
 
 fall_instr_let a39[2] = {
-    {7,3,2,10,1},
-    {7,0,2,11,3}
+    {7,0,2,11,3},
+	{7,3,2,10,1}    
 };
 
 // *********************************************************************
