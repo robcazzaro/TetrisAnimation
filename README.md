@@ -2,24 +2,31 @@
 
 An Arduino library for drawing letters and numbers using a falling block style animation.
 
-[![alt text](https://j.gifs.com/6RvBDl.gif "Tetris clock animation")](https://youtu.be/BGmjvfqf_0U)
+[![alt text](https://github.com/robcazzaro/TetrisTFTAnimation/blob/master/TetrisDemo.gif "Tetris alphabet animation")]
 
 Desigined orginally for RGB LED Matrixes, modified to work with SPI TFT screen and https://github.com/Bodmer/TFT_eSPI.
 
-### [Currently broken] Displays/Libraries tested ( Examples included)
+Main improvements include adding 3D border effects to blocks when scaled up, having the block start from random starting points and move towards the final destination, fixing a rotation bug in the original library (the logic recognized only 0 and 1 rotations, even if the characters were designed for up to 3 rotations.
+
+The library should still work with the original Adafruit GFX library and the original samples should still work, but not guaranteed
+
+### Displays/Libraries tested (Examples included)
+
+- Integrated ESP32 and TFT [TFT_eSPI ESP32/ESP8266 library](https://github.com/Bodmer/TFT_eSPI)
+
+Original libraries, not tested with updated library, but should still work
 - RGB LED Matrix using the [PxMatrix library](https://github.com/2dom/PxMatrix/) - ESP8266 and ESP32
 - VGA Display using the [Bitluni ESP32Lib](https://github.com/bitluni/ESP32Lib) - ESP32
 - Nokia 5110 Screen using a modified [Adafruit PCD8544 library](https://github.com/bbx10/Adafruit-PCD8544-Nokia-5110-LCD-library/tree/esp8266) - ESP8266
 
-PLEASE NOTE: There are some issues with ESP8266 sketches that make use of WiFi as well, there is an issue open for this: https://github.com/toblum/TetrisAnimation/issues/3
 
 ## Installation & Setup
 
-Fron ZIP file
+From ZIP file
 
 ## Basic Usage
 
-See examples for more details.
+See example for more details.
 
 ### Intialise library by passing in a display:
 
@@ -64,7 +71,7 @@ tetris.setText("HOWDY!");
 
 ### Draw the value:
 
-These will normally be called in a timer or ticker (see any example). How often they are called will increase/decrease the speed of which the blocks drop.
+These will normally be called in a timer or ticker (see the example). How often they are called will increase/decrease the speed of which the blocks drop.
 
 ```
 
